@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="GitTrack helps you explore GitHub developer profiles, repositories, and public activity in a polished analytics dashboard."
+    />
+    <title>GitTrack | Profile Explorer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+              mono: ['JetBrains Mono', 'ui-monospace', 'SFMono-Regular', 'monospace']
+            },
+            boxShadow: {
+              soft: '0 20px 45px rgba(15, 23, 42, 0.15)',
+              glow: '0 18px 40px rgba(59, 130, 246, 0.28)'
+            }
+          }
+        }
+      };
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+  <body class="bg-[var(--bg)] text-[var(--text)] antialiased transition-colors duration-300">
+    <div class="min-h-screen">
+      <header class="sticky top-0 z-40 border-b border-[var(--border)] bg-[var(--nav-bg)]/90 backdrop-blur-xl">
+        <nav class="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
+          <div class="flex min-w-0 items-center gap-3">
+            <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#3B82F6] to-[#06B6D4] shadow-glow">
+              <svg viewBox="0 0 24 24" class="h-5 w-5 text-white" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M8 18a5 5 0 0 1 0-10h8a5 5 0 0 1 0 10H8Z"></path>
+                <path d="M9 14h6"></path>
+                <path d="M10 10h4"></path>
+                <path d="M12 7v10"></path>
+              </svg>
+            </div>
+            <div class="min-w-0">
+              <div class="flex items-center gap-2">
+                <span class="font-sans text-lg font-bold tracking-tight text-[var(--text)]">GitTrack</span>
+              </div>
+              <div class="text-[10px] uppercase tracking-[0.24em] text-[var(--muted)]">Profile Explorer</div>
+            </div>
+          </div>
+
+          <form id="navSearchForm" class="hidden flex-1 items-center justify-center md:flex">
+            <label class="relative block w-full max-w-xl">
+              <span class="sr-only">Search GitHub username</span>
+              <span class="pointer-events-none absolute inset-y-0 left-4 flex items-center text-[var(--muted)]">
+                <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <circle cx="11" cy="11" r="6"></circle>
+                  <path d="m16 16 4 4"></path>
+                </svg>
+              </span>
+              <input
+                id="navUsernameInput"
+                type="text"
+                autocomplete="off"
+                placeholder="Search GitHub username..."
+                class="w-full rounded-xl border border-[var(--border)] bg-[var(--card)] py-2.5 pl-11 pr-28 text-sm text-[var(--text)] placeholder:text-[var(--muted)] shadow-sm outline-none transition focus:border-[#3B82F6] focus:ring-2 focus:ring-[#3B82F6]/25"
+              />
+              <button
+                type="submit"
+                class="absolute right-1.5 top-1.5 inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-[#3B82F6] to-[#06B6D4] px-4 py-2 text-xs font-medium text-white shadow-lg shadow-[#3B82F6]/20 transition hover:translate-y-[-1px] hover:opacity-95"
+              >
+                Search
+              </button>
+            </label>
+          </form>
+
+          <div class="flex items-center gap-2 sm:gap-3">
+            <button id="mobileNavToggle" type="button" class="mobile-nav-toggle" aria-label="Open navigation">
+              <span></span><span></span><span></span>
+            </button>
+            <button
+              id="themeToggle"
+              type="button"
+              class="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-[var(--border)] bg-[var(--card)] text-[var(--text)] shadow-sm transition hover:border-[#3B82F6]/60 hover:text-[#3B82F6]"
+              aria-label="Toggle color theme"
+            >
+              <svg id="themeIconSun" viewBox="0 0 24 24" class="h-4 w-4 hidden" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="4"></circle>
+                <path d="M12 2v2"></path>
+                <path d="M12 20v2"></path>
+                <path d="m4.93 4.93 1.41 1.41"></path>
+                <path d="m17.66 17.66 1.41 1.41"></path>
+                <path d="M2 12h2"></path>
+                <path d="M20 12h2"></path>
+                <path d="m4.93 19.07 1.41-1.41"></path>
+                <path d="m17.66 6.34 1.41-1.41"></path>
+              </svg>
+              <svg id="themeIconMoon" viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"></path>
+              </svg>
+            </button>
+            <a
+              href="https://github.com"
+              target="_blank"
+              rel="noreferrer"
+              class="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-[var(--border)] bg-[var(--card)] text-[var(--text)] shadow-sm transition hover:border-[#3B82F6]/60 hover:text-[#3B82F6]"
+              aria-label="Visit GitHub"
+            >
+              <svg viewBox="0 0 24 24" class="h-4 w-4" fill="currentColor" aria-hidden="true">
+                <path d="M12 .5a12 12 0 0 0-3.79 23.4c.6.11.82-.26.82-.58v-2.04c-3.34.72-4.04-1.42-4.04-1.42-.54-1.38-1.32-1.75-1.32-1.75-1.08-.74.08-.72.08-.72 1.2.08 1.83 1.22 1.83 1.22 1.06 1.82 2.78 1.3 3.46.99.11-.78.42-1.3.76-1.6-2.66-.3-5.46-1.33-5.46-5.92 0-1.31.47-2.38 1.22-3.22-.12-.3-.53-1.52.12-3.17 0 0 1-.32 3.3 1.22A11.4 11.4 0 0 1 12 6.8c1.01 0 2.03.14 2.98.41 2.29-1.54 3.29-1.22 3.29-1.22.65 1.65.24 2.87.12 3.17.76.84 1.22 1.91 1.22 3.22 0 4.6-2.81 5.61-5.49 5.91.43.37.81 1.1.81 2.21v3.3c0 .32.22.7.83.58A12 12 0 0 0 12 .5Z"></path>
+              </svg>
+            </a>
+            <a href="#about" class="hidden text-sm font-medium text-[var(--muted)] transition hover:text-[var(--text)] sm:inline-flex">About</a>
+          </div>
+        </nav>
+      </header>
+
+      <main id="appMain">
+        <section id="welcomeSection" class="relative overflow-hidden">
+          <div class="pointer-events-none absolute inset-0">
+            <div class="absolute -left-24 top-12 h-64 w-64 rounded-full bg-[#3B82F6]/20 blur-3xl"></div>
+            <div class="absolute right-0 top-0 h-80 w-80 rounded-full bg-[#06B6D4]/20 blur-3xl"></div>
+          </div>
+          <div class="relative mx-auto max-w-6xl px-4 pb-18 pt-16 sm:px-6 lg:px-8 lg:pb-24 lg:pt-20">
+            <div class="mx-auto max-w-3xl text-center">
+              <div class="mb-6 inline-flex items-center gap-2 rounded-full border border-[#3B82F6]/30 bg-[#3B82F6]/10 px-3 py-1 text-xs font-medium uppercase tracking-[0.2em] text-[#93C5FD]">
+                GitHub profile intelligence
+              </div>
+              <h1 class="text-4xl font-black leading-tight tracking-[-0.06em] text-[var(--text)] sm:text-5xl lg:text-7xl">
+                Discover the developer behind the code.
+              </h1>
+              <p class="mx-auto mt-6 max-w-2xl text-base text-[var(--muted)] sm:text-lg">
+                Explore public developer profiles, inspect repo trends, and understand the stack behind every build with GitTrack.
+              </p>
+
+              <form id="welcomeSearchForm" class="mx-auto mt-10 max-w-2xl" novalidate>
+                <div class="flex flex-col gap-3 rounded-2xl border border-[var(--border)] bg-[var(--card)] p-3 shadow-soft sm:flex-row sm:items-center">
+                  <div class="relative flex-1">
+                    <span class="pointer-events-none absolute inset-y-0 left-4 flex items-center text-[var(--muted)]">
+                      <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <circle cx="11" cy="11" r="6"></circle>
+                        <path d="m16 16 4 4"></path>
+                      </svg>
+                    </span>
+                    <input
+                      id="welcomeUsernameInput"
+                      type="text"
+                      autocomplete="off"
+                      placeholder="Search GitHub username..."
+                      class="w-full rounded-xl border border-transparent bg-[var(--bg)] py-4 pl-11 pr-4 text-base text-[var(--text)] placeholder:text-[var(--muted)] outline-none transition focus:border-[#3B82F6] focus:ring-2 focus:ring-[#3B82F6]/20"
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    class="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#3B82F6] to-[#06B6D4] px-5 py-4 text-base font-semibold text-white shadow-lg shadow-[#3B82F6]/20 transition hover:translate-y-[-1px] hover:opacity-95"
+                  >
+                    Explore
+                    <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="M5 12h14"></path>
+                      <path d="m12 5 7 7-7 7"></path>
+                    </svg>
+                  </button>
+                </div>
+              </form>
+
+              <p class="mt-4 text-sm text-[var(--muted)]">
+                Try searching for
+                <button type="button" class="suggestion-chip" data-username="torvalds">torvalds</button>,
+                <button type="button" class="suggestion-chip" data-username="gaearon">gaearon</button>,
+                <button type="button" class="suggestion-chip" data-username="sindresorhus">sindresorhus</button>
+              </p>
+
+              <div class="mt-12 grid gap-4 text-left sm:grid-cols-3">
+                <div class="feature-card">
+                  <div class="feature-icon">
+                    <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="M3 20h18"></path>
+                      <path d="M7 16V4"></path>
+                      <path d="M12 16V8"></path>
+                      <path d="M17 16v-6"></path>
+                    </svg>
+                  </div>
+                  <h3>Developer Insights</h3>
+                  <p>Profile health, social signals, activity, and developer footprint at a glance.</p>
+                </div>
+                <div class="feature-card">
+                  <div class="feature-icon">
+                    <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="M6 7h12"></path>
+                      <path d="M6 12h12"></path>
+                      <path d="M6 17h9"></path>
+                    </svg>
+                  </div>
+                  <h3>Repository Analytics</h3>
+                  <p>Track stars, forks, recency, and growth across public code projects.</p>
+                </div>
+                <div class="feature-card">
+                  <div class="feature-icon">
+                    <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="M7 7h10v10H7z"></path>
+                      <path d="M10 4h4"></path>
+                      <path d="M10 20h4"></path>
+                    </svg>
+                  </div>
+                  <h3>Technology Breakdown</h3>
+                  <p>Uncover preferred languages and the ecosystems shaping a developer's work.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="profileSection" class="hidden pb-20">
+          <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div class="view-navigation" aria-label="Profile navigation">
+              <button id="backButton" type="button" class="view-nav-button" aria-label="Go back to the previous view">
+                <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="m15 18-6-6 6-6"></path>
+                </svg>
+                <span>Back</span>
+              </button>
+              <button id="homeButton" type="button" class="view-nav-button" aria-label="Return to the GitTrack home page">
+                <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="m3 11 9-8 9 8"></path>
+                  <path d="M5 10v10h14V10"></path>
+                  <path d="M9 20v-6h6v6"></path>
+                </svg>
+                <span>Home</span>
+              </button>
+            </div>
+            <div id="profileHeader" class="profile-shell"></div>
+
+            <div id="statsGrid" class="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4"></div>
+
+            <div class="mt-8 grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
+              <div class="panel">
+                <div class="mb-5 flex items-center justify-between gap-4">
+                  <h3 class="text-xl font-semibold text-[var(--text)]">Programming languages</h3>
+                </div>
+                <div class="chart-panel">
+                  <canvas id="languageChart" aria-label="Language distribution chart"></canvas>
+                </div>
+                <div id="languageLegend" class="mt-6 flex flex-wrap gap-3"></div>
+              </div>
+
+              <div class="panel">
+                <div class="mb-5 flex items-center justify-between gap-4">
+                  <h3 class="text-xl font-semibold text-[var(--text)]">Repository overview</h3>
+                </div>
+                <div id="repoOverview" class="space-y-3"></div>
+              </div>
+            </div>
+
+            <div class="panel mt-8">
+              <div class="mb-5 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                <div>
+                  <h3 class="text-2xl font-semibold text-[var(--text)]">Repositories</h3>
+                  <p id="repoCountBadge" class="mt-1 text-sm text-[var(--muted)]">0 repositories</p>
+                </div>
+                <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+                  <label class="relative block w-full sm:min-w-[220px]">
+                    <span class="sr-only">Filter repositories</span>
+                    <span class="pointer-events-none absolute inset-y-0 left-3 flex items-center text-[var(--muted)]">
+                      <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <circle cx="11" cy="11" r="6"></circle>
+                        <path d="m16 16 4 4"></path>
+                      </svg>
+                    </span>
+                    <input id="repoSearchInput" type="text" placeholder="Search repositories" class="w-full rounded-xl border border-[var(--border)] bg-[var(--bg)] py-2.5 pl-10 pr-3 text-sm text-[var(--text)] placeholder:text-[var(--muted)] outline-none transition focus:border-[#3B82F6] focus:ring-2 focus:ring-[#3B82F6]/20" />
+                  </label>
+                  <select id="repoFilter" class="rounded-xl border border-[var(--border)] bg-[var(--bg)] px-3 py-2.5 text-sm text-[var(--text)] outline-none transition focus:border-[#3B82F6] focus:ring-2 focus:ring-[#3B82F6]/20">
+                    <option value="all">All repositories</option>
+                    <option value="starred">Most starred</option>
+                    <option value="updated">Recently updated</option>
+                    <option value="created">Recently created</option>
+                    <option value="forked">Forked repositories</option>
+                  </select>
+                </div>
+              </div>
+
+              <div id="repoList" class="grid gap-5 lg:grid-cols-2"></div>
+
+              <div class="mt-6 flex justify-center">
+                <button id="loadMoreBtn" type="button" class="hidden inline-flex items-center justify-center gap-2 rounded-xl border border-[var(--border)] bg-[var(--card)] px-4 py-2.5 text-sm font-medium text-[var(--text)] transition hover:border-[#3B82F6]/60 hover:text-[#3B82F6]">
+                  Load more repositories
+                </button>
+              </div>
+            </div>
+
+            <div class="panel mt-8">
+              <div class="mb-5 flex items-center justify-between gap-4">
+                <h3 class="text-2xl font-semibold text-[var(--text)]">Recent activity</h3>
+              </div>
+              <div id="activityList" class="space-y-4"></div>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+
+    <script src="js/theme.js"></script>
+    <script src="js/storage.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/profile.js"></script>
+    <script src="js/repositories.js"></script>
+    <script src="js/chart.js"></script>
+    <script src="js/dashboard.js"></script>
+    <script src="js/app.js"></script>
+  </body>
+</html>

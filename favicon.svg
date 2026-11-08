@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="GitTrack logo">
+  <defs>
+    <linearGradient id="gt-grad" x1="0%" x2="100%" y1="0%" y2="100%">
+      <stop offset="0%" stop-color="#3B82F6"/>
+      <stop offset="100%" stop-color="#06B6D4"/>
+    </linearGradient>
+  </defs>
+  <rect x="4" y="4" width="56" height="56" rx="18" fill="#0B1020"/>
+  <rect x="14" y="14" width="36" height="36" rx="12" fill="url(#gt-grad)" opacity="0.18"/>
+  <path d="M20 42a8 8 0 0 1 0-16h24a8 8 0 0 1 0 16H20Z" fill="none" stroke="url(#gt-grad)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M24 34h16" stroke="#F8FAFC" stroke-width="3" stroke-linecap="round"/>
+  <path d="M26 26h12" stroke="#F8FAFC" stroke-width="3" stroke-linecap="round"/>
+  <path d="M32 20v20" stroke="#F8FAFC" stroke-width="3" stroke-linecap="round"/>
+</svg>
