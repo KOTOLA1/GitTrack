@@ -321,6 +321,7 @@ const Dashboard = {
     ];
     const values = metrics.map(([, getter]) => developers.map(getter));
     const ageValues = developers.map((item) => Math.max(0, new Date().getFullYear() - new Date(item.profile.created_at).getFullYear()));
+    const insights = this.comparisonInsights(developers);
     return `
       <div class="compare-cards">${developers.map((item) => `<article class="panel compare-profile">
         <img src="${item.profile.avatar_url || ''}" alt="${escapeHtml(item.profile.login)} avatar">
@@ -328,6 +329,7 @@ const Dashboard = {
         <a class="compact-button" href="${item.profile.html_url || '#'}" target="_blank" rel="noreferrer">GitHub ↗</a>
         <div class="compare-profile-meta"><span>${formatNumber(item.profile.followers || 0)} followers</span><span>${formatNumber(item.profile.following || 0)} following</span><span>Joined ${new Date(item.profile.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short' })}</span></div>
       </article>`).join('')}</div>
+      ${this.insightsMarkup(insights)}
       <section class="comparison-grid">${metrics.map(([label, getter], metricIndex) => {
         const metricValues = values[metricIndex];
         const maximum = Math.max(...metricValues, 1);
@@ -337,6 +339,98 @@ const Dashboard = {
       <section class="panel comparison-card account-age-card"><span>Account age</span><div class="comparison-values">${developers.map((item, index) => `<div class="${ageValues[index] === Math.max(...ageValues) ? 'is-winner' : ''}"><strong>${ageValues[index]} yrs</strong><small>${escapeHtml(item.profile.login)}</small><span class="muted-copy">${new Date(item.profile.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}</span></div>`).join('')}</div></section>
       <section class="panel language-comparison"><div class="section-heading"><div><h2>Most-used programming languages</h2><p>Based on the languages detected across each developer's public repositories.</p></div></div><div class="language-comparison-grid">${developers.map((item) => `<div><strong class="code-text">@${escapeHtml(item.profile.login)}</strong>${this.languageBars(item.repos)}</div>`).join('')}</div></section>
       <section class="panel activity-comparison"><div class="section-heading"><div><h2>Contribution & activity snapshot</h2><p>Recent public events available from GitHub's API.</p></div></div><div class="activity-comparison-grid">${developers.map((item) => `<div class="activity-snapshot"><strong>${formatNumber(item.events.length)}</strong><span>recent public events</span><small>${item.events[0] ? `Last seen ${new Date(item.events[0].created_at).toLocaleDateString()}` : 'No recent public activity returned'}</small><b>${escapeHtml(item.profile.login)}</b></div>`).join('')}</div></section>
+    `;
+  },
+
+  comparisonInsights(developers) {
+    const profiles = developers.map((item) => {
+      const stars = item.repos.reduce((sum, repo) => sum + (repo.stargazers_count || 0), 0);
+      const forks = item.repos.reduce((sum, repo) => sum + (repo.forks_count || 0), 0);
+      const createdAt = new Date(item.profile.created_at);
+      const accountAge = Number.isNaN(createdAt.getTime()) ? 0 : Math.max(0, (Date.now() - createdAt.getTime()) / (365.25 * 24 * 60 * 60 * 1000));
+      return {
+        item,
+        login: item.profile.login,
+        followers: item.profile.followers || 0,
+        repositories: item.profile.public_repos || item.repos.length,
+        stars,
+        forks,
+        activity: item.events.length,
+        accountAge
+      };
+    });
+
+    const winnerFor = (getter) => profiles.reduce((winner, profile) => getter(profile) > getter(winner) ? profile : winner, profiles[0]);
+    const maxFor = (getter) => Math.max(...profiles.map(getter), 0);
+    const starsAndForks = (profile) => profile.stars + profile.forks;
+    const scoreMetrics = ['followers', 'repositories', 'stars', 'forks', 'activity', 'accountAge'];
+    const scores = profiles.map((profile) => {
+      const score = scoreMetrics.reduce((total, key) => {
+        const maximum = maxFor((candidate) => candidate[key]);
+        return total + (maximum ? profile[key] / maximum : 0);
+      }, 0) / scoreMetrics.length;
+      return { login: profile.login, score: Math.round(score * 100) };
+    });
+    const languageCounts = {};
+    developers.forEach((developer) => developer.repos.forEach((repo) => {
+      if (repo.language) languageCounts[repo.language] = (languageCounts[repo.language] || 0) + 1;
+    }));
+    const languageEntry = Object.entries(languageCounts).sort((a, b) => b[1] - a[1])[0];
+    const scoreWinner = scores.reduce((winner, score) => score.score > winner.score ? score : winner, scores[0]);
+    const mostActive = winnerFor((profile) => profile.activity);
+    const mostPopular = winnerFor((profile) => profile.followers);
+    const mostRepositories = winnerFor((profile) => profile.repositories);
+    const mostStarsAndForks = winnerFor(starsAndForks);
+    const mostExperienced = winnerFor((profile) => profile.accountAge);
+
+    return {
+      profiles,
+      scores,
+      mostActive,
+      mostPopular,
+      mostRepositories,
+      mostStarsAndForks,
+      mostExperienced,
+      mostUsedLanguage: languageEntry ? { name: languageEntry[0], count: languageEntry[1] } : null,
+      scoreWinner
+    };
+  },
+
+  insightsMarkup(insights) {
+    const { mostActive, mostPopular, mostRepositories, mostStarsAndForks, mostExperienced, mostUsedLanguage, scores, scoreWinner } = insights;
+    const winnerName = scoreWinner.login;
+    const languageSummary = mostUsedLanguage ? `${mostUsedLanguage.name} appears in ${formatNumber(mostUsedLanguage.count)} public ${mostUsedLanguage.count === 1 ? 'repository' : 'repositories'}.` : 'No detected repository languages were returned.';
+    const summary = `${winnerName} leads the overall comparison score. ${mostActive.login} has the most recent public activity, while ${mostPopular.login} has the largest audience. ${languageSummary}`;
+
+    const insightCards = [
+      ['Most active developer', mostActive.login, `${formatNumber(mostActive.activity)} recent events`, 'activity'],
+      ['Most popular developer', mostPopular.login, `${formatNumber(mostPopular.followers)} followers`, 'popular'],
+      ['Most repositories', mostRepositories.login, `${formatNumber(mostRepositories.repositories)} public repositories`, 'repositories'],
+      ['Most stars & forks', mostStarsAndForks.login, `${formatNumber(mostStarsAndForks.stars)} stars · ${formatNumber(mostStarsAndForks.forks)} forks`, 'impact'],
+      ['Account experience', mostExperienced.login, `${mostExperienced.accountAge.toFixed(1)} years on GitHub`, 'experience'],
+      ['Most-used language', mostUsedLanguage ? mostUsedLanguage.name : 'No language data', mostUsedLanguage ? `${formatNumber(mostUsedLanguage.count)} repositories` : 'No detected languages', 'language']
+    ];
+
+    return `
+      <section class="developer-insights panel">
+        <div class="section-heading"><div><span class="eyebrow">Developer Insights</span><h2>What stands out in this comparison?</h2><p>Highlights calculated from the public profile, repository, and activity data already loaded.</p></div><span class="insights-badge">${scores.length} developers</span></div>
+        <div class="insights-grid">${insightCards.map(([label, login, value, type]) => `
+          <article class="insight-card insight-${type}">
+            <span class="insight-label">${label}</span>
+            <strong>${escapeHtml(login)}</strong>
+            <small>${escapeHtml(value)}</small>
+          </article>
+        `).join('')}</div>
+        <div class="insights-score-panel">
+          <div class="section-heading"><div><h3>Overall comparison score</h3><p>Balanced across audience, repositories, stars, forks, activity, and account experience.</p></div></div>
+          <div class="insights-score-list">${scores.sort((a, b) => b.score - a.score).map((score, index) => `
+            <div class="insights-score-row ${index === 0 ? 'is-leader' : ''}">
+              <span class="insights-rank">${index + 1}</span><strong class="code-text">${escapeHtml(score.login)}</strong><div class="score-track"><i style="width:${score.score}%"></i></div><b>${score.score}/100</b>
+            </div>
+          `).join('')}</div>
+        </div>
+        <p class="insights-summary"><span>Summary</span>${escapeHtml(summary)}</p>
+      </section>
     `;
   },
 

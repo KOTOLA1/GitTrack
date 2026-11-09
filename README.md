@@ -11,6 +11,7 @@ GitTrack is a browser-based GitHub profile explorer and developer analytics dash
 - Developer comparison for 2–4 GitHub usernames
 - Comparison of followers, following, repositories, stars, forks, account age, languages, and activity
 - Winner highlighting and visual progress bars for comparison metrics
+- Developer Insights with comparison leaders, language trends, account experience, scores, and a summary
 - Dashboard navigation for profiles, repositories, favorites, history, settings, and comparisons
 - Favorites, search history, bookmarks, and recent repositories stored locally in the browser
 - Responsive layouts for desktop, tablet, and mobile
